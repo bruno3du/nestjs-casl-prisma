@@ -1,0 +1,87 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "mysql"
+    url      = env("DATABASE_URL")
+}
+
+model Resource {
+    id              String     @id @unique @default(uuid())
+    name            String     @unique
+    description     String
+    createdAt       DateTime   @default(now())
+    updatedAt       DateTime   @default(now())
+    parentId        String?
+    parentResource  Resource?  @relation("Resources", fields: [parentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    nestedResources Resource[] @relation("Resources")
+
+    UserPermission UserPermission[]
+    RolePermission RolePermission[]
+
+    @@map("resource")
+}
+
+model Role {
+    id          String           @id @default(uuid())
+    profileId   String           @unique
+    name        String           @unique
+    description String
+    permissions RolePermission[]
+    createdAt   DateTime         @default(now())
+    updatedAt   DateTime         @default(now())
+    userRole    UserRole[]
+
+    @@map("role")
+}
+
+model UserRole {
+    id        String   @id @default(uuid())
+    userId    String   @unique
+    role      Role?    @relation(fields: [roleId], references: [id])
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+    roleId    String?
+
+    @@map("user_role")
+}
+
+model UserPermission {
+    id         String         @id @default(uuid())
+    userId     String
+    permission PermissionType
+    resource   Resource       @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    resourceId String
+    createdAt  DateTime       @default(now())
+    updatedAt  DateTime       @default(now())
+
+    @@map("user_permissions")
+}
+
+enum PermissionType {
+    PERMITTED
+    NOTPERMITTED
+    DENY
+}
+
+enum ActionType {
+    MANAGE
+    CREATE
+    READ
+    UPDATE
+    DELETE
+}
+
+model RolePermission {
+    id         String         @id @default(uuid())
+    resource   Resource       @relation(fields: [resourceId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    resourceId String
+    permission PermissionType
+    createdAt  DateTime       @default(now())
+    updatedAt  DateTime       @default(now())
+    role       Role?          @relation(fields: [roleId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+    roleId     String?
+
+    @@map("role_permission")
+}
